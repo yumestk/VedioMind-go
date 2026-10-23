@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: vediomind
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a local database password}
+      POSTGRES_DB: vediomind
+    ports:
+      - "127.0.0.1:55437:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vediomind -d vediomind"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  postgres_data:
