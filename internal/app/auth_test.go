@@ -139,10 +139,23 @@ func TestAuthentication(t *testing.T) {
 	out := httptest.NewRecorder()
 	b.handler.ServeHTTP(out, req)
 	status(t, out, 403)
-	// Forwarded IPs cannot bypass the database-backed source limit.
-	for i := 0; i < 11; i++ {
-		w = b.request("POST", "/api/auth/login", `{"email":"absent@example.com","password":"wrong-long-password"}`)
+	// Seed an exhausted source window so bcrypt runtime and a minute rollover
+	// cannot make this assertion probabilistic. Include the next window too.
+	if _, err := db.Exec(`INSERT INTO rate_limit_counters(scope,window_start,count)
+ SELECT 'auth:ip:192.0.2.1',floor(extract(epoch from clock_timestamp())/60)::bigint+window_offset,10
+ FROM generate_series(0,1) AS window_offset
+ ON CONFLICT(scope,window_start) DO UPDATE SET count=10`); err != nil {
+		t.Fatal(err)
 	}
+	req = httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(`{"email":"absent@example.com","password":"wrong-long-password"}`))
+	req.RemoteAddr = "192.0.2.1:1234"
+	req.Header.Set("Origin", "http://localhost:5173")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Forwarded-For", "203.0.113.77")
+	req.Header.Set("X-CSRF-Token", b.csrf)
+	req.AddCookie(&http.Cookie{Name: "vm_csrf", Value: b.csrf})
+	w = httptest.NewRecorder()
+	b.handler.ServeHTTP(w, req)
 	status(t, w, 429)
 	if w.Header().Get("Retry-After") == "" {
 		t.Fatal("missing retry-after")
