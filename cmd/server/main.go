@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,6 +24,18 @@ func main() {
 	}
 }
 func run() error {
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		client := &http.Client{Timeout: 3 * time.Second}
+		res, err := client.Get("http://127.0.0.1:8080/api/health/ready")
+		if err != nil {
+			return err
+		}
+		defer res.Body.Close()
+		if res.StatusCode != 200 {
+			return fmt.Errorf("health status %d", res.StatusCode)
+		}
+		return nil
+	}
 	cfg, err := app.LoadConfig()
 	if err != nil {
 		return err
@@ -50,6 +64,7 @@ func run() error {
 	server := &http.Server{Addr: cfg.Address, Handler: application.Routes(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 5 * time.Minute, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
 	stop, done := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer done()
+	server.BaseContext = func(net.Listener) context.Context { return stop }
 	application.RunWorkers(stop)
 	defer func() { done(); application.WaitWorkers() }()
 	errors := make(chan error, 1)

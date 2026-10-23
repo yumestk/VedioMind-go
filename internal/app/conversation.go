@@ -230,10 +230,14 @@ func (s *Server) releaseQuestion(a *questionAttempt) {
 }
 func parseAnswer(raw string, segments []platform.Segment) (string, []Citation, error) {
 	var result struct {
-		Answer string `json:"answer"`
-		IDs    []int  `json:"segmentIds"`
+		Answer string          `json:"answer"`
+		IDs    json.RawMessage `json:"segmentIds"`
 	}
 	if json.Unmarshal([]byte(raw), &result) != nil || strings.TrimSpace(result.Answer) == "" {
+		return "", nil, ai.Invalid()
+	}
+	var ids []int
+	if len(result.IDs) == 0 || result.IDs[0] != '[' || json.Unmarshal(result.IDs, &ids) != nil {
 		return "", nil, ai.Invalid()
 	}
 	byID := map[int]platform.Segment{}
@@ -242,7 +246,7 @@ func parseAnswer(raw string, segments []platform.Segment) (string, []Citation, e
 	}
 	seen := map[int]bool{}
 	refs := []Citation{}
-	for _, id := range result.IDs {
+	for _, id := range ids {
 		segment, ok := byID[id]
 		if !ok {
 			return "", nil, ai.Invalid()

@@ -39,3 +39,49 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+  browser:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: vediomind
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: vediomind_test
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U vediomind -d vediomind_test" --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://vediomind:test_password@localhost:5432/vediomind_test?sslmode=disable
+      GIN_MODE: release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+      - run: npm run test:e2e
+        working-directory: web
+      - run: npm run test:e2e:production
+        working-directory: web
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-failure
+          path: web/test-results/
+          retention-days: 7
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --tag vediomind:ci .
+      - run: docker run --rm --entrypoint /bin/sh vediomind:ci -c 'node --version && yt-dlp --version && test -f /app/web/dist/index.html'

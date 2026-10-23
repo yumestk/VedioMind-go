@@ -161,3 +161,18 @@ func TestConfig(t *testing.T) {
 		t.Fatalf("%+v %v", c, err)
 	}
 }
+
+func TestTrustedProxyConfiguration(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://test")
+	t.Setenv("APP_ENV", "development")
+	t.Setenv("PUBLIC_ORIGIN", "http://localhost:5173")
+	t.Setenv("TRUSTED_PROXIES", "127.0.0.1, 10.10.0.0/16")
+	cfg, err := LoadConfig()
+	if err != nil || len(cfg.TrustedProxies) != 2 {
+		t.Fatal(cfg, err)
+	}
+	t.Setenv("TRUSTED_PROXIES", "not-a-network")
+	if _, err = LoadConfig(); err == nil {
+		t.Fatal("invalid proxy accepted")
+	}
+}

@@ -10,7 +10,10 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
-    "test": "vitest run"
+    "test": "vitest run src",
+    "test:e2e": "playwright test",
+    "format": "prettier --write src vite.config.ts playwright.config.ts e2e",
+    "test:e2e:production": "E2E_PRODUCTION=1 playwright test"
   },
   "dependencies": {
     "dompurify": "3.4.17",

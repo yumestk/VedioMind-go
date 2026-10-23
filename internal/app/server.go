@@ -73,7 +73,9 @@ func (s *Server) cookie(c *gin.Context, name, value string, age int, httpOnly bo
 }
 func (s *Server) Routes() *gin.Engine {
 	r := gin.New()
-	_ = r.SetTrustedProxies(nil)
+	if err := r.SetTrustedProxies(s.Config.TrustedProxies); err != nil {
+		panic(err)
+	}
 	r.Use(func(c *gin.Context) {
 		id := randomToken()
 		c.Set("requestId", id)
@@ -113,7 +115,7 @@ func (s *Server) Routes() *gin.Engine {
 	api.GET("/media/:id/conversations", s.listConversations)
 	api.GET("/conversations/:conversationId/messages", s.getMessages)
 	api.POST("/media/:id/questions", s.askQuestion)
-	r.NoRoute(func(c *gin.Context) { fail(c, 404, "NOT_FOUND", "资源不存在") })
+	r.NoRoute(s.notFoundOrSPA)
 	return r
 }
 func (s *Server) csrf(c *gin.Context) {

@@ -12,6 +12,7 @@ Thumbs.db
 
 # Go build, profiling and test output
 /bin/
+/server
 *.test
 *.prof
 /coverage.out

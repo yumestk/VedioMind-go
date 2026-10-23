@@ -75,12 +75,13 @@ func New(binary, proxy string) *Resolver {
 	return &Resolver{Client: &http.Client{Timeout: 30 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}, Inspect: func(ctx context.Context, canonical string) ([]byte, error) {
 		ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
 		defer cancel()
-		args := []string{"--ignore-config", "--no-update", "--dump-single-json", "--skip-download", "--no-playlist", "--socket-timeout", "20", "--retries", "1"}
+		args := []string{"--ignore-config", "--no-update", "--js-runtimes", "node", "--dump-single-json", "--skip-download", "--no-playlist", "--socket-timeout", "20", "--retries", "1"}
 		if proxy != "" {
 			args = append(args, "--proxy", proxy)
 		}
 		args = append(args, canonical)
 		cmd := exec.CommandContext(ctx, binary, args...)
+		prepareCommand(cmd)
 		cmd.WaitDelay = 2 * time.Second
 		out := &limitedBuffer{limit: 20 << 20}
 		stderr := &limitedBuffer{limit: 4096}

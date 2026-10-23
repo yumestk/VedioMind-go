@@ -73,7 +73,9 @@ export function AnalysisPanel({
     FAILED: "分析未完成",
   };
   const html = result?.summary
-    ? DOMPurify.sanitize(marked.parse(result.summary, { async: false }))
+    ? DOMPurify.sanitize(marked.parse(result.summary, { async: false }), {
+        FORBID_TAGS: ["img", "style", "svg", "math"],
+      })
     : "";
   return (
     <section className="panel analysis-panel">

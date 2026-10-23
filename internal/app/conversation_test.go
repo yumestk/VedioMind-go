@@ -26,7 +26,7 @@ func TestAnswerValidation(t *testing.T) {
 	if err != nil || answer != noEvidence || len(refs) != 0 {
 		t.Fatal(answer, refs, err)
 	}
-	for _, raw := range []string{`{"answer":"x","segmentIds":[1.5]}`, `{"answer":"x","segmentIds":[999]}`, `{"answer":"x","segmentIds":[null]}`, `{"answer":" ","segmentIds":[1]}`, `not json`} {
+	for _, raw := range []string{`{"answer":"x","segmentIds":[1.5]}`, `{"answer":"x","segmentIds":[999]}`, `{"answer":"x","segmentIds":[null]}`, `{"answer":" ","segmentIds":[1]}`, `not json`, `{"answer":"x","segmentIds":null}`, `{"answer":"x"}`} {
 		if _, _, err := parseAnswer(raw, segments); err == nil {
 			t.Fatal(raw)
 		}

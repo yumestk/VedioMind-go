@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"net/netip"
 	"net/url"
 	"os"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 type Config struct {
 	DatabaseURL, Address, Origin string
 	SecureCookie                 bool
+	TrustedProxies               []string
 }
 
 func LoadConfig() (Config, error) {
@@ -31,6 +33,25 @@ func LoadConfig() (Config, error) {
 	}
 	if strings.TrimSpace(c.DatabaseURL) == "" {
 		return c, fmt.Errorf("DATABASE_URL is required")
+	}
+	for _, raw := range strings.Split(os.Getenv("TRUSTED_PROXIES"), ",") {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			continue
+		}
+		if _, err := netip.ParsePrefix(raw); err != nil {
+			if _, err := netip.ParseAddr(raw); err != nil {
+				return c, fmt.Errorf("invalid TRUSTED_PROXIES address or CIDR")
+			}
+		}
+		c.TrustedProxies = append(c.TrustedProxies, raw)
+	}
+	modelURL, err := url.Parse(envString("AI_BASE_URL", "https://api.deepseek.com"))
+	if err != nil || modelURL.Host == "" || modelURL.User != nil || modelURL.RawQuery != "" || modelURL.Fragment != "" || (modelURL.Scheme != "http" && modelURL.Scheme != "https") {
+		return c, fmt.Errorf("invalid AI_BASE_URL")
+	}
+	if os.Getenv("APP_ENV") == "production" && modelURL.Scheme != "https" {
+		return c, fmt.Errorf("production AI_BASE_URL requires HTTPS")
 	}
 	return c, nil
 }
