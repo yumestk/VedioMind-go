@@ -2,11 +2,11 @@
 
 Go + React 的视频内容理解工作台。V1 目标：粘贴 Bilibili / YouTube 公共单视频链接，读取平台字幕、内嵌播放、生成总结和章节，并进行带字幕引用的多轮问答。
 
-当前完成 **P1：基础服务与账号**。已支持注册、登录、刷新后恢复身份、退出及共享登录限流。视频与 AI 功能尚未实现。
+当前完成 **P2：视频链接、字幕与内嵌播放**。已支持账号、视频导入与历史、字幕搜索及时间定位、owner 隔离和删除；AI 总结、章节和问答尚未实现。
 
 ## 本地运行
 
-需要 Go 1.27.1、Node 24.22.1、PostgreSQL 18。前后端依赖分别由 `go.sum` 和 `web/package-lock.json` 固定。
+需要 Go 1.27.1、Node 24.22.1、PostgreSQL 18，以及 PATH 中可用的 yt-dlp（YouTube 元数据解析）。前后端依赖分别由 `go.sum` 和 `web/package-lock.json` 固定。
 
 ```sh
 # 启动数据库；也可使用已有 PostgreSQL 并调整连接地址
@@ -40,6 +40,7 @@ go test -race ./...
 go vet ./...
 cd web
 npm run build
+npm test
 ```
 
 没有 `TEST_DATABASE_URL` 时 PostgreSQL 集成测试会明确跳过，不能视为完成账号验收。CI 提供 PostgreSQL 18 并运行这些检查。
@@ -51,3 +52,5 @@ npm run build
 本版本账号隔离基础不等于完整的多企业 SaaS。组织、计费、Redis、消息队列、向量库、上传和语音识别不属于 V1。
 
 计划、ADR 和验收记录按约定只保留在本地 `docs/`，不提交 GitHub。
+
+平台解析有网络超时与大小限制，仅请求受限平台/字幕域名，不读取浏览器 Cookie。YouTube 依赖 yt-dlp，仅检查元数据并读取 JSON3 字幕，不下载媒体。无字幕则拒绝导入且不保存半份记录。重复导入复用原有快照。平台可能限制字幕、区域和嵌入播放；受控测试通过不代表所有公开视频均可导入。
