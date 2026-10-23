@@ -102,6 +102,10 @@ test("leaving a workspace cancels a delayed read and stops analysis polling", as
   await page
     .getByLabel("密码", { exact: true })
     .fill("navigation-long-password");
+  // Reproduce a late Set-Cookie from an aborted StrictMode bootstrap request.
+  await page.evaluate(() => {
+    document.cookie = `vm_csrf=${"f".repeat(64)}; Path=/; SameSite=Lax`;
+  });
   await page.getByRole("button", { name: "创建账号", exact: true }).click();
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {

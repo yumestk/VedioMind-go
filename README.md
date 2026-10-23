@@ -113,4 +113,4 @@ LIVE_VIDEO_URL='https://www.youtube.com/watch?v=dQw4w9WgXcQ' go test ./internal/
 
 2026-10-23 本地网络实测：两个链接分别取得 1680 条 Bilibili 自动中文字幕、61 条 YouTube 人工英文字幕，yt-dlp 为 2026.06.09。Bilibili 官方 iframe 在浏览器加载到可播放数据状态（readyState 4）；YouTube 同一样例的 iframe 显示 “This video is unavailable”，因此不声称 YouTube 真实播放已通过。页面提供原站链接；嵌入受限时不会自动下载或绕过平台限制。
 
-真实 DeepSeek 总结/章节/问答尚未调用，输出质量与实际模型预算待单独验收。本机 Docker daemon 未运行，Compose 配置校验通过，容器构建/启动以 CI 和后续实机结果为准。
+真实 DeepSeek 总结/章节/问答尚未调用，输出质量与实际模型预算待单独验收。本机 Docker daemon 未运行；Linux CI 已通过完整 Compose 镜像构建、PostgreSQL 迁移、Node/yt-dlp 检查、应用就绪和静态深链接验证。

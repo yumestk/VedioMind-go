@@ -9,8 +9,15 @@ export class APIError extends Error {
     super(message);
   }
 }
-let csrf = "";
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+  // Cancelled concurrent GETs can still apply Set-Cookie in the browser.
+  // Read the current double-submit cookie instead of caching a response token.
+  const csrf =
+    document.cookie
+      .split(";")
+      .map((v) => v.trim())
+      .find((v) => v.startsWith("vm_csrf="))
+      ?.slice("vm_csrf=".length) || "";
   const response = await fetch(`/api${path}`, {
     ...init,
     credentials: "same-origin",
@@ -20,14 +27,11 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
       ...init.headers,
     },
   });
-  csrf = response.headers.get("X-CSRF-Token") || csrf;
   if (!response.ok) {
-    const body = await response
-      .json()
-      .catch(() => ({
-        code: "NETWORK_ERROR",
-        message: "请求失败，请稍后重试",
-      }));
+    const body = await response.json().catch(() => ({
+      code: "NETWORK_ERROR",
+      message: "请求失败，请稍后重试",
+    }));
     if (
       response.status === 401 &&
       path !== "/auth/me" &&
