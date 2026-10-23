@@ -46,9 +46,12 @@ func run() error {
 	if len(os.Args) > 1 && os.Args[1] == "migrate" {
 		return nil
 	}
-	server := &http.Server{Addr: cfg.Address, Handler: app.New(db, cfg).Routes(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 5 * time.Minute, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
+	application := app.New(db, cfg)
+	server := &http.Server{Addr: cfg.Address, Handler: application.Routes(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 5 * time.Minute, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16 << 10}
 	stop, done := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer done()
+	application.RunWorkers(stop)
+	defer func() { done(); application.WaitWorkers() }()
 	errors := make(chan error, 1)
 	go func() { slog.Info("HTTP listening", "address", cfg.Address); errors <- server.ListenAndServe() }()
 	select {

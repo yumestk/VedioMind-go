@@ -9,10 +9,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"github.com/yumestk/VedioMind-go/internal/ai"
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +23,8 @@ import (
 )
 
 type Server struct {
+	AI        *ai.Client
+	workers   sync.WaitGroup
 	DB        *sql.DB
 	Config    Config
 	dummyHash []byte
@@ -32,7 +37,7 @@ type User struct {
 }
 
 func New(db *sql.DB, cfg Config) *Server {
-	return &Server{DB: db, Config: cfg, dummyHash: passwordDummy(), Resolver: platform.New("", "")}
+	return &Server{DB: db, Config: cfg, dummyHash: passwordDummy(), Resolver: platform.New(os.Getenv("YTDLP_BINARY"), os.Getenv("YTDLP_PROXY")), AI: &ai.Client{URL: envString("AI_BASE_URL", "https://api.deepseek.com"), Key: os.Getenv("AI_API_KEY"), Model: os.Getenv("AI_MODEL"), Budget: envInt("AI_CONTEXT_BUDGET", 48000), Output: envInt("AI_OUTPUT_TOKENS", 4096), HTTP: &http.Client{Timeout: 120 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}}
 }
 func randomToken() string {
 	b := make([]byte, 32)
@@ -100,6 +105,10 @@ func (s *Server) Routes() *gin.Engine {
 	api.GET("/media/:id", s.getMedia)
 	api.DELETE("/media/:id", s.deleteMedia)
 	api.GET("/media/:id/transcript", s.getTranscript)
+	api.GET("/media/:id/analysis", s.analysisResult)
+	api.POST("/media/:id/analyses", s.startAnalysis)
+	api.GET("/media/:id/analysis-jobs/active", s.activeJob)
+	api.GET("/analysis-jobs/:jobId", s.getJob)
 	r.NoRoute(func(c *gin.Context) { fail(c, 404, "NOT_FOUND", "资源不存在") })
 	return r
 }

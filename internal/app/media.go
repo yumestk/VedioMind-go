@@ -12,7 +12,8 @@ import (
 )
 
 type Media struct {
-	ID string `json:"id"`
+	Job *Job   `json:"job,omitempty"`
+	ID  string `json:"id"`
 	platform.Video
 	SnapshotVersion int       `json:"snapshotVersion"`
 	CreatedAt       time.Time `json:"createdAt"`
@@ -193,6 +194,10 @@ func (s *Server) importMedia(c *gin.Context) {
 			internal(c, err)
 			return
 		}
+	}
+	if m.Job, err = enqueue(ctx, tx, m, u.ID); err != nil {
+		internal(c, err)
+		return
 	}
 	if err = tx.Commit(); err != nil {
 		internal(c, err)

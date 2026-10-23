@@ -42,3 +42,11 @@ func envInt(key string, fallback int) int {
 	}
 	return n
 }
+
+func envString(key, fallback string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	return v
+}

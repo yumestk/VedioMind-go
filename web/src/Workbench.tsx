@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AnalysisPanel } from "./AnalysisPanel";
 import {
   Link,
   Navigate,
@@ -225,12 +226,7 @@ function WorkspaceContent({ id }: { id: string }) {
               在原站打开 ↗
             </a>
           </div>
-          <section className="panel">
-            <h2>原片与文字，一起阅读</h2>
-            <p>
-              右侧是本次导入保存的字幕，支持搜索和时间定位。播放是否可用取决于原平台的嵌入限制与当前网络。
-            </p>
-          </section>
+          <AnalysisPanel mediaId={id} />
         </section>
         <section className="transcript-panel">
           <div className="section-heading">

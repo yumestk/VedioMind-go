@@ -434,3 +434,38 @@ small {
     padding: 0 22px;
   }
 }
+.markdown {
+  font-size: 13px;
+  color: #42584b;
+  overflow-wrap: anywhere;
+}
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  font-size: 17px;
+  margin: 20px 0 10px;
+}
+.markdown li {
+  margin: 7px 0;
+}
+.markdown code {
+  background: #f1f4ec;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+.markdown pre {
+  overflow: auto;
+  padding: 12px;
+  background: #f4f6ee;
+}
+.markdown a {
+  color: #46785c;
+}
+.analysis-panel .section-heading > span {
+  color: #839582;
+  font-size: 11px;
+}
+.analysis-panel small {
+  display: block;
+  overflow-wrap: anywhere;
+}
