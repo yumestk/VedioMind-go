@@ -16,12 +16,14 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/yumestk/VedioMind-go/internal/platform"
 )
 
 type Server struct {
 	DB        *sql.DB
 	Config    Config
 	dummyHash []byte
+	Resolver  *platform.Resolver
 }
 
 type User struct {
@@ -30,7 +32,7 @@ type User struct {
 }
 
 func New(db *sql.DB, cfg Config) *Server {
-	return &Server{DB: db, Config: cfg, dummyHash: passwordDummy()}
+	return &Server{DB: db, Config: cfg, dummyHash: passwordDummy(), Resolver: platform.New("", "")}
 }
 func randomToken() string {
 	b := make([]byte, 32)
@@ -93,6 +95,11 @@ func (s *Server) Routes() *gin.Engine {
 	api.POST("/auth/register", s.register)
 	api.POST("/auth/login", s.login)
 	api.POST("/auth/logout", s.logout)
+	api.GET("/media", s.listMedia)
+	api.POST("/media/import-url", s.importMedia)
+	api.GET("/media/:id", s.getMedia)
+	api.DELETE("/media/:id", s.deleteMedia)
+	api.GET("/media/:id/transcript", s.getTranscript)
 	r.NoRoute(func(c *gin.Context) { fail(c, 404, "NOT_FOUND", "资源不存在") })
 	return r
 }
