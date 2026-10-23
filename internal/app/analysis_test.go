@@ -41,6 +41,9 @@ func TestAnalysisLeaseCheckpointAndOwnership(t *testing.T) {
 	other := registered(t, s, "other@example.com")
 	m := importFixture(t, s, b)
 	ctx := context.Background()
+	if _, err := s.DB.Exec(`UPDATE analysis_jobs SET pipeline_version=1`); err != nil {
+		t.Fatal(err)
+	}
 	ts, calls := fakeAI(s, 200, "## 总结\nGo 与并发。")
 	defer ts.Close()
 	// Two claimers cannot own the same active job.
@@ -94,7 +97,7 @@ func TestAnalysisLeaseCheckpointAndOwnership(t *testing.T) {
 		t.Fatal("unexpected model calls", calls.Load())
 	}
 	status(t, b.request("GET", "/api/media/"+m.ID+"/analysis", ""), 200)
-	status(t, b.request("POST", "/api/media/"+m.ID+"/analyses", "{}"), 200)
+	status(t, b.request("POST", "/api/media/"+m.ID+"/analyses", "{}"), 202)
 	var count int
 	s.DB.QueryRow(`SELECT count(*) FROM analysis_artifacts`).Scan(&count)
 	if count != 1 {

@@ -12,7 +12,7 @@ import (
 	"github.com/yumestk/VedioMind-go/internal/ai"
 )
 
-const pipelineVersion = 1
+const pipelineVersion = 2
 const processorVersion = 1
 const leaseSeconds = 60
 
@@ -73,7 +73,12 @@ func (s *Server) analysisResult(c *gin.Context) {
 		internal(c, err)
 		return
 	}
-	c.JSON(200, gin.H{"summary": summary, "job": job})
+	chapters, err := s.chapters(c.Request.Context(), m.ID, m.SnapshotVersion)
+	if err != nil {
+		internal(c, err)
+		return
+	}
+	c.JSON(200, gin.H{"summary": summary, "job": job, "chapters": chapters})
 }
 func (s *Server) startAnalysis(c *gin.Context) {
 	m, u, ok := s.ownedMedia(c)
@@ -106,7 +111,7 @@ func (s *Server) startAnalysis(c *gin.Context) {
 		return
 	}
 	var complete bool
-	if err = tx.QueryRowContext(c.Request.Context(), `SELECT EXISTS(SELECT 1 FROM analysis_artifacts WHERE media_id=$1 AND snapshot_version=$2 AND kind='SUMMARY' AND processor_version=$3)`, m.ID, m.SnapshotVersion, processorVersion).Scan(&complete); err != nil {
+	if err = tx.QueryRowContext(c.Request.Context(), `SELECT EXISTS(SELECT 1 FROM analysis_artifacts WHERE media_id=$1 AND snapshot_version=$2 AND kind='SUMMARY' AND processor_version=$3) AND EXISTS(SELECT 1 FROM analysis_artifacts WHERE media_id=$1 AND snapshot_version=$2 AND kind='CHAPTERS' AND processor_version=$3)`, m.ID, m.SnapshotVersion, processorVersion).Scan(&complete); err != nil {
 		internal(c, err)
 		return
 	}
@@ -255,19 +260,55 @@ func (s *Server) process(ctx context.Context, j *Job) error {
 		return errLeaseLost
 	}
 	data, _ := json.Marshal(segments)
-	messages := summaryPrompt(string(data))
-	if err = s.AI.Check(messages); err != nil {
+	_, err = s.artifact(ctx, j.MediaID, j.Snapshot, "SUMMARY")
+	if errors.Is(err, sql.ErrNoRows) {
+		messages := summaryPrompt(string(data))
+		text, err := s.stageCall(ctx, j, messages, false)
+		if err != nil {
+			return err
+		}
+		payload, _ := json.Marshal(text)
+		if err = s.saveArtifact(ctx, j, "SUMMARY", payload, j.Pipeline == 1); err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	} else {
+		if err = s.advance(ctx, j, j.Pipeline == 1); err != nil {
+			return err
+		}
+	}
+	if j.Pipeline == 1 {
+		return nil
+	}
+	_, err = s.artifact(ctx, j.MediaID, j.Snapshot, "CHAPTERS")
+	if err == nil {
+		return s.advance(ctx, j, true)
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
-	if err = s.reserveCall(ctx, j); err != nil {
-		return err
-	}
-	text, err := s.AI.Complete(ctx, messages, false)
+	text, err := s.stageCall(ctx, j, chapterPrompt(string(data)), true)
 	if err != nil {
 		return err
 	}
-	payload, _ := json.Marshal(text)
-	return s.saveArtifact(ctx, j, "SUMMARY", payload, true)
+	chapters, err := parseChapters(text, segments)
+	if err != nil {
+		return err
+	}
+	payload, _ := json.Marshal(chapters)
+	return s.saveArtifact(ctx, j, "CHAPTERS", payload, true)
+}
+func (s *Server) stageCall(ctx context.Context, j *Job, messages []ai.Message, jsonOutput bool) (string, error) {
+	if err := s.AI.Check(messages); err != nil {
+		return "", err
+	}
+	if err := s.reserveCall(ctx, j); err != nil {
+		return "", err
+	}
+	call, cancel := context.WithTimeout(ctx, 120*time.Second)
+	defer cancel()
+	return s.AI.Complete(call, messages, jsonOutput)
 }
 func (s *Server) saveArtifact(ctx context.Context, j *Job, kind string, payload []byte, complete bool) error {
 	tx, err := s.DB.BeginTx(ctx, nil)
@@ -318,7 +359,7 @@ func (s *Server) finishError(ctx context.Context, j *Job, cause error) {
 func (s *Server) execute(parent context.Context, j *Job) {
 	ctx, cancel := context.WithDeadline(parent, j.deadline)
 	defer cancel()
-	call, cancelCall := context.WithTimeout(ctx, 120*time.Second)
+	call, cancelCall := context.WithCancel(ctx)
 	defer cancelCall()
 	heartbeatDone := make(chan struct{})
 	go func() {

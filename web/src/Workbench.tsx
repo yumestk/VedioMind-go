@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { Chapter } from "./AnalysisPanel";
 import { AnalysisPanel } from "./AnalysisPanel";
 import {
   Link,
@@ -130,6 +131,7 @@ function WorkspaceContent({ id }: { id: string }) {
     [seek, setSeek] = useState<number | null>(null),
     [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
+  const [chapters, setChapters] = useState<Chapter[]>([]);
   useEffect(() => {
     const ctrl = new AbortController();
     Promise.all([
@@ -226,7 +228,11 @@ function WorkspaceContent({ id }: { id: string }) {
               在原站打开 ↗
             </a>
           </div>
-          <AnalysisPanel mediaId={id} />
+          <AnalysisPanel
+            mediaId={id}
+            onSeek={setSeek}
+            onChapters={setChapters}
+          />
         </section>
         <section className="transcript-panel">
           <div className="section-heading">
@@ -247,15 +253,22 @@ function WorkspaceContent({ id }: { id: string }) {
               <p className="empty-state">没有匹配的字幕。</p>
             ) : (
               visible.map((s) => (
-                <div className="segment" key={s.id}>
-                  <button
-                    className="timestamp"
-                    onClick={() => setSeek(s.startMs)}
-                    aria-label={`跳转至 ${timestamp(s.startMs)}`}
-                  >
-                    {timestamp(s.startMs)}
-                  </button>
-                  <p>{s.text}</p>
+                <div key={s.id}>
+                  {chapters.find((ch) => ch.startSegmentId === s.id) && (
+                    <h3 className="transcript-chapter">
+                      {chapters.find((ch) => ch.startSegmentId === s.id)?.title}
+                    </h3>
+                  )}
+                  <div className="segment">
+                    <button
+                      className="timestamp"
+                      onClick={() => setSeek(s.startMs)}
+                      aria-label={`跳转至 ${timestamp(s.startMs)}`}
+                    >
+                      {timestamp(s.startMs)}
+                    </button>
+                    <p>{s.text}</p>
+                  </div>
                 </div>
               ))
             )}

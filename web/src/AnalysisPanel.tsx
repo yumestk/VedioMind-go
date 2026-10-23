@@ -2,6 +2,12 @@ import { useEffect, useState } from "react";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { api } from "./api";
+export type Chapter = {
+  title: string;
+  startSegmentId: number;
+  startMs: number;
+  endMs: number;
+};
 export type Job = {
   id: string;
   mediaId: string;
@@ -10,8 +16,20 @@ export type Job = {
   errorCode: string | null;
   errorMessage: string | null;
 };
-type Analysis = { summary: string | null; job: Job | null };
-export function AnalysisPanel({ mediaId }: { mediaId: string }) {
+type Analysis = {
+  summary: string | null;
+  job: Job | null;
+  chapters: Chapter[];
+};
+export function AnalysisPanel({
+  mediaId,
+  onSeek,
+  onChapters,
+}: {
+  mediaId: string;
+  onSeek: (ms: number) => void;
+  onChapters: (chapters: Chapter[]) => void;
+}) {
   const [result, setResult] = useState<Analysis | null>(null),
     [error, setError] = useState(""),
     [epoch, setEpoch] = useState(0),
@@ -26,6 +44,7 @@ export function AnalysisPanel({ mediaId }: { mediaId: string }) {
         });
         if (ctrl.signal.aborted) return;
         setResult(r);
+        onChapters(r.chapters);
         setError("");
         if (
           r.job &&
@@ -41,13 +60,14 @@ export function AnalysisPanel({ mediaId }: { mediaId: string }) {
       ctrl.abort();
       clearTimeout(timer);
     };
-  }, [mediaId, epoch]);
+  }, [mediaId, epoch, onChapters]);
   const active =
     !!result?.job &&
     ["PENDING", "RUNNING", "RETRY_WAIT"].includes(result.job.status);
   const labels: Record<string, string> = {
     PENDING: "等待分析",
-    RUNNING: "正在整理总结",
+    RUNNING:
+      result?.job?.stage === "CHAPTERS" ? "正在梳理章节" : "正在整理总结",
     RETRY_WAIT: "模型暂时繁忙，等待重试",
     SUCCEEDED: "分析完成",
     FAILED: "分析未完成",
@@ -63,6 +83,27 @@ export function AnalysisPanel({ mediaId }: { mediaId: string }) {
           {result?.job ? labels[result.job.status] : "读取状态中"}
         </span>
       </div>
+      {!!result?.chapters.length && (
+        <nav className="chapters" aria-label="语义章节">
+          <h3>内容章节</h3>
+          {result.chapters.map((chapter, i) => (
+            <button
+              key={chapter.startSegmentId}
+              onClick={() => onSeek(chapter.startMs)}
+            >
+              <span>{String(i + 1).padStart(2, "0")}</span>
+              {chapter.title}
+              <small>
+                {Math.floor(chapter.startMs / 60000)}:
+                {String(Math.floor(chapter.startMs / 1000) % 60).padStart(
+                  2,
+                  "0",
+                )}
+              </small>
+            </button>
+          ))}
+        </nav>
+      )}
       {html ? (
         <div className="markdown" dangerouslySetInnerHTML={{ __html: html }} />
       ) : (
@@ -78,7 +119,7 @@ export function AnalysisPanel({ mediaId }: { mediaId: string }) {
           {error}
         </p>
       )}
-      {!active && !result?.summary && (
+      {!active && (!result?.summary || !result?.chapters.length) && (
         <button
           className="primary"
           disabled={busy}
@@ -97,7 +138,7 @@ export function AnalysisPanel({ mediaId }: { mediaId: string }) {
             }
           }}
         >
-          {busy ? "正在提交…" : "生成 / 重试总结"}
+          {busy ? "正在提交…" : "生成 / 补全分析"}
         </button>
       )}
       {error && (

@@ -469,3 +469,40 @@ small {
   display: block;
   overflow-wrap: anywhere;
 }
+.chapters {
+  border-bottom: 1px solid #e3e9dc;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+.chapters h3,
+.transcript-chapter {
+  font-size: 13px;
+  color: #5c7e64;
+}
+.chapters button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid #edf0e6;
+  padding: 10px 0;
+  font-size: 12px;
+  color: #456c4b;
+}
+.chapters button span {
+  font-size: 10px;
+  color: #9ba995;
+}
+.chapters button small {
+  margin: 0 0 0 auto;
+  color: #9aa78f;
+}
+.chapters button:hover {
+  background: #f4f7ee;
+}
+.transcript-chapter {
+  margin: 20px 0 0;
+}

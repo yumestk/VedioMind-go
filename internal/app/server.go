@@ -106,6 +106,7 @@ func (s *Server) Routes() *gin.Engine {
 	api.DELETE("/media/:id", s.deleteMedia)
 	api.GET("/media/:id/transcript", s.getTranscript)
 	api.GET("/media/:id/analysis", s.analysisResult)
+	api.GET("/media/:id/chapters", s.getChapters)
 	api.POST("/media/:id/analyses", s.startAnalysis)
 	api.GET("/media/:id/analysis-jobs/active", s.activeJob)
 	api.GET("/analysis-jobs/:jobId", s.getJob)
