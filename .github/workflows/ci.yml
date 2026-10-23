@@ -81,7 +81,15 @@ jobs:
           retention-days: 7
   container:
     runs-on: ubuntu-latest
+    env:
+      POSTGRES_PASSWORD: ci_password
+      PUBLIC_ORIGIN: http://localhost:8080
     steps:
       - uses: actions/checkout@v4
-      - run: docker build --tag vediomind:ci .
-      - run: docker run --rm --entrypoint /bin/sh vediomind:ci -c 'node --version && yt-dlp --version && test -f /app/web/dist/index.html'
+      - run: docker compose up --build -d --wait --wait-timeout 120
+      - run: docker compose exec -T app node --version && docker compose exec -T app yt-dlp --version
+      - run: curl -fsS http://localhost:8080/api/health/ready && curl -fsS -o /dev/null http://localhost:8080/media/123
+      - run: docker compose logs --no-color
+        if: failure()
+      - run: docker compose down --volumes
+        if: always()

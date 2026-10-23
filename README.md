@@ -88,7 +88,7 @@ PUBLIC_ORIGIN=http://localhost:8080 go run ./cmd/server
 POSTGRES_PASSWORD=vediomind_dev PUBLIC_ORIGIN=http://localhost:8080 docker compose up --build -d
 ```
 
-镜像包括编译后的 Go、React 静态资源、Python、Node 和固定版本 yt-dlp。应用以非 root 用户运行，数据库有持久卷和健康检查，应用就绪后再启动。启动时迁移数据库；升级前应备份。停止容器使用 `docker compose down`，保留数据卷；不要把 `down -v` 当作日常停止命令。
+镜像包括编译后的 Go、React 静态资源、Python、Node 和固定版本 yt-dlp。应用以非 root 用户运行，数据库有持久卷和健康检查，应用在数据库就绪后启动。启动时迁移数据库；升级前应备份。停止容器使用 `docker compose down`，保留数据卷；不要把 `down -v` 当作日常停止命令。
 
 生产需 HTTPS 反向代理、`APP_ENV=production`、真实 `PUBLIC_ORIGIN`、数据库备份与恢复演练、可信代理 CIDR 和外部网络连通性。模型服务地址在生产要求 HTTPS。本项目不包含企业组织、计费、负载压测或高可用数据库部署，不能把 V1 验收当作付费 SaaS 上线验收。
 
@@ -102,7 +102,7 @@ npm run test:e2e
 npm run test:e2e:production
 ```
 
-两组均连接真实 Gin/PostgreSQL，外部平台、模型和 iframe 为受控响应。覆盖注册、导入、总结、章节、两轮问答/引用、刷新、删除、退出、恶意 Markdown、窄屏，以及离开页面后取消旧读取并停止轮询。测试替身只在 Go 测试进程启用，生产没有失败后伪造成功的开关。CI 另构建镜像并检查 Node/yt-dlp/静态资源。
+两组均连接真实 Gin/PostgreSQL，外部平台、模型和 iframe 为受控响应。覆盖注册、导入、总结、章节、两轮问答/引用、刷新、删除、退出、恶意 Markdown、窄屏，以及离开页面后取消旧读取并停止轮询。测试替身只在 Go 测试进程启用，生产没有失败后伪造成功的开关。CI 另构建并启动完整 Compose，检查 Node/yt-dlp、数据库迁移、应用就绪和静态深链接。
 
 手动真实平台 smoke（普通测试不会联网）：
 
