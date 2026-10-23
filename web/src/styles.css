@@ -506,3 +506,91 @@ small {
 .transcript-chapter {
   margin: 20px 0 0;
 }
+.conversation-panel {
+  margin-top: 24px;
+}
+.conversation-select {
+  font-size: 11px;
+  color: #839780;
+  font-weight: 400;
+  margin-bottom: 20px;
+}
+.conversation-select select {
+  font: inherit;
+  background: #f7f9f1;
+  color: #476e50;
+  border: 1px solid #dfe7d6;
+  border-radius: 6px;
+  padding: 8px;
+}
+.chat-messages {
+  max-height: 550px;
+  overflow: auto;
+  margin: 18px 0 24px;
+}
+.chat-message {
+  padding: 15px;
+  border: 1px solid #e3e9da;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+.chat-message.user {
+  background: #f1f5e9;
+  margin-left: 30px;
+}
+.chat-message.assistant {
+  background: #fcfdf9;
+  margin-right: 15px;
+}
+.chat-message p {
+  white-space: pre-wrap;
+  font-size: 13px !important;
+  color: #466044 !important;
+  line-height: 1.9;
+}
+.chat-message .eyebrow {
+  font-size: 9px;
+}
+.citations {
+  display: grid;
+  gap: 7px;
+}
+.citations button {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  background: #eef4e6;
+  border: 0;
+  border-radius: 4px;
+  padding: 9px;
+  color: #597849;
+  text-align: left;
+  font-size: 11px;
+}
+.citations button span {
+  white-space: nowrap;
+}
+.citations q {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.question-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+.question-footer small {
+  margin: 0;
+}
+.chat-footnote,
+.chat-hint {
+  color: #9ba88f !important;
+  font-size: 11px !important;
+}
+.chat-footnote {
+  margin: 18px 0 0;
+}
+.chat-hint {
+  padding: 16px 0;
+}

@@ -1,3 +1,4 @@
+import { ConversationPanel } from "./ConversationPanel";
 import { useEffect, useState } from "react";
 import type { Chapter } from "./AnalysisPanel";
 import { AnalysisPanel } from "./AnalysisPanel";
@@ -233,6 +234,7 @@ function WorkspaceContent({ id }: { id: string }) {
             onSeek={setSeek}
             onChapters={setChapters}
           />
+          <ConversationPanel mediaId={id} onSeek={setSeek} />
         </section>
         <section className="transcript-panel">
           <div className="section-heading">

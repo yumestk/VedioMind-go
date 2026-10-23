@@ -110,6 +110,9 @@ func (s *Server) Routes() *gin.Engine {
 	api.POST("/media/:id/analyses", s.startAnalysis)
 	api.GET("/media/:id/analysis-jobs/active", s.activeJob)
 	api.GET("/analysis-jobs/:jobId", s.getJob)
+	api.GET("/media/:id/conversations", s.listConversations)
+	api.GET("/conversations/:conversationId/messages", s.getMessages)
+	api.POST("/media/:id/questions", s.askQuestion)
 	r.NoRoute(func(c *gin.Context) { fail(c, 404, "NOT_FOUND", "资源不存在") })
 	return r
 }
